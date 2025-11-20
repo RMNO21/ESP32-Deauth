@@ -1,14 +1,14 @@
 # ESP Deauth (Educational Project)
-![Circuit Diagram](image/circuit%20(1).svg)
+![Circuit Diagram](image/circuit%20(1).png)
 
 This repository provides a minimal ESP32-based hardware and software scaffold intended for education and experimentation in a controlled environment. It is designed for ethical, lawful, and responsible learning only.
 
 Important: This project does not implement or demonstrate any real-world attack or unauthorized network access. It is a learning placeholder for hardware wiring, firmware structure, and basic ESP32 programming.
 
 ## Clone This Repository
-To get started, clone this repository (address to be provided):
+To get started, clone this repository (RMNO21/ESP32-Deauth):
 ```
-git clone <REPO_URL>
+git clone https://github.com/RMNO21/ESP32-Deauth
 ```
 
 ## How to Use
@@ -50,9 +50,9 @@ Prerequisites: ESP32 board support added to Arduino IDE.
 1. Select board: ESP32 Dev Module; connect your ESP32 to the PC; upload via the IDE.
 
 ## What This Project Does
-- Provides a ready-made scaffold with core docs and minimal hardware bill-of-materials for ESP32 education.
-- Emphasizes safe, ethical, and legal experimentation; explicit disclaimers and usage notes.
-- Serves as a starting point for learning ESP32, peripherals wiring, and firmware structure without deploying any harmful payloads.
+- Scan for nearby Wi-Fi access points (beacons) and deauthenticate a selected target.
+- Optionally, deauthenticate all nearby Wi-Fi networks to disrupt all connections in range.
+- Control the device via physical buttons or a web interface by connecting to the Wi-Fi network "ESP32-Deauth" (password: git-RMNO21) and navigating to the ESP32’s IP address: 192.168.4.1.
 
 ## Licensing
 This project is licensed under the GNU General Public License v3.0 or later. See LICENSE for details.
