@@ -1,5 +1,7 @@
 # ESP Deauth (Educational Project)
-![Circuit Diagram](image/circuit%20(1).png)
+<img width="1280" height="757" alt="image" src="https://github.com/user-attachments/assets/e7bfb0f2-5364-456a-94c7-93c8dbbdab42" />
+
+
 
 This repository provides a minimal ESP32-based hardware and software scaffold intended for education and experimentation in a controlled environment. It is designed for ethical, lawful, and responsible learning only.
 
@@ -13,6 +15,7 @@ git clone https://github.com/RMNO21/ESP32-Deauth
 
 ## How to Use
 This project is a hardware-software scaffold for ESP32. Below are common workflows to develop and upload firmware to an ESP32 Dev Kit V1 board.
+![Circuit Diagram](image/circuit%20(1).png)
 
 ### PlatformIO (recommended)
 Prerequisites: PlatformIO Core or PlatformIO IDE extension installed.
