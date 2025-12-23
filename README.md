@@ -14,7 +14,7 @@ git clone https://github.com/RMNO21/ESP32-Deauth
 ```
 
 ## How to Use
-This project is a hardware-software scaffold for ESP32. Below are common workflows to develop and upload firmware to an ESP32 Dev Kit V1 board.
+This project is a hardware-software scaffold for ESP32. Below are common workflows to develop and upload firmware to an ESP32 Dev Kit V1 board.(on ther ESP-32 boards, renaming pins required
 ![Circuit Diagram](image/circuit%20(1).png)
 
 ### PlatformIO (recommended)
