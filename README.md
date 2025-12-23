@@ -39,6 +39,10 @@ pio run -e esp32dev -t upload
 ```
 pio device monitor -p /dev/ttyUSB0
 ```
+###Disclaimer 🚨
+Personal Responsibility & Liability Limitation: Users are solely responsible for their actions and any legal consequences that may arise from the misuse of the information or tools. Author disclaims all liability for any direct or indirect damage or loss caused by such misuse.
+
+Raman Tondro
 
 ### ESP-IDF (alternative)
 Prerequisites: ESP-IDF installed and configured.
@@ -60,3 +64,5 @@ Prerequisites: ESP32 board support added to Arduino IDE.
 ## Licensing
 This project is licensed under the GNU General Public License v3.0 or later. See LICENSE for details.
 See the MODULES.md for hardware details.
+---
+Remember: With great power comes great responsibility. Use this tool ethically and legally.
