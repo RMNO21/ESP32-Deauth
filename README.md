@@ -39,7 +39,7 @@ pio run -e esp32dev -t upload
 ```
 pio device monitor -p /dev/ttyUSB0
 ```
-###Disclaimer 🚨
+### Disclaimer 🚨
 Personal Responsibility & Liability Limitation: Users are solely responsible for their actions and any legal consequences that may arise from the misuse of the information or tools. Author disclaims all liability for any direct or indirect damage or loss caused by such misuse.
 
 Raman Tondro
