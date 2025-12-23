@@ -40,8 +40,8 @@ pio run -e esp32dev -t upload
 pio device monitor -p /dev/ttyUSB0
 ```
 ### Disclaimer 🚨
-Personal Responsibility & Liability Limitation: Users are solely responsible for their actions and any legal consequences that may arise from the misuse of the information or tools. Author disclaims all liability for any direct or indirect damage or loss caused by such misuse.
-
+Educational Purpose: The primary goal of the provided information is to educate users about cybersecurity and defensive measures against potential threats.
+Legal and Responsible Use: Users must agree to use the knowledge and tools solely in a lawful and responsible manner, adhering to all applicable laws and regulations in their jurisdiction.
 Raman Tondro
 
 ### ESP-IDF (alternative)
