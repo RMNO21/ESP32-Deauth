@@ -148,8 +148,6 @@ int getbattery() {
 }
 
 
-// in this code i got assistance from ai model named chatgpt from open ai companny.
 // every illigal activiti is on your own, this is just for learning
 //report any bugs or suggestions to <tondroraman83@gmail.com>
 //this code is inspired by: https://github.com/tesa-klebeband/ESP32-Deauther
-//https://github.com/RMNO21/Mort
