@@ -4,7 +4,9 @@ This repository contains an ESP32-based deauth tool for **educational and testin
 
 - An OLED-based menu controlled by buttons on the ESP32
 - A built-in web interface for triggering attacks from a browser
-- Support for deauthing one, some, or all visible Wi-Fi networks using the same core logic
+- Support for deauthing one, some, or all visible Wi-Fi networks
+
+  <img width="1280" height="757" alt="image" src="https://github.com/user-attachments/assets/e7bfb0f2-5364-456a-94c7-93c8dbbdab42" />
 
 ![Circuit Diagram](image/circuit%20(1).png)
 
@@ -115,3 +117,4 @@ See [DISCLAIMER.md](DISCLAIMER.md) for more detail.
 ## License
 
 This project is licensed under the GNU General Public License v3.0 or later. See [LICENSE](LICENSE) for details.
+
