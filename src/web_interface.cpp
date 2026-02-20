@@ -1,3 +1,4 @@
+#include <WiFi.h>
 #include <WebServer.h>
 #include "web_interface.h"
 #include "definitions.h"
@@ -6,7 +7,6 @@
 WebServer server(80);
 int num_networks;
 
-// Move the function declaration to the top
 String getEncryptionType(wifi_auth_mode_t encryptionType);
 
 void redirect_root() {
@@ -121,6 +121,31 @@ void handle_root() {
         <input type="submit" value="Deauth All">
     </form>
 
+    <form method="post" action="/deauth_some">
+        <h2>Deauth Some Networks</h2>
+        <p>Select networks to deauth one by one.</p>
+        <table>
+            <tr>
+                <th>Select</th>
+                <th>Number</th>
+                <th>SSID</th>
+                <th>BSSID</th>
+                <th>Channel</th>
+            </tr>
+)";
+
+  for (int i = 0; i < num_networks; i++) {
+    html += "<tr><td><input type=\"checkbox\" name=\"net_" + String(i) + "\" value=\"" + String(i) + "\"></td><td>" +
+            String(i) + "</td><td>" + WiFi.SSID(i) + "</td><td>" + WiFi.BSSIDstr(i) + "</td><td>" +
+            String(WiFi.channel(i)) + "</td></tr>";
+  }
+
+  html += R"(
+        </table>
+        <input type="text" name="reason" placeholder="Reason code">
+        <input type="submit" value="Deauth Selected">
+    </form>
+
     <form method="post" action="/stop">
         <input type="submit" value="Stop Deauth-Attack">
     </form>
@@ -213,6 +238,60 @@ void handle_deauth() {
     </style>
 </head>
 <body>
+    <div class="alert")";
+
+  {
+    std::lock_guard<std::mutex> lock(wifi_mutex);
+    if (wifi_number >= 0 && wifi_number < num_networks) {
+      html += R"(" >
+        <h2>Starting Deauth-Attack!</h2>
+        <p>Deauthenticating network number: )" + String(wifi_number) + R"(</p>
+        <p>Reason code: )" + String(reason) + R"(</p>
+    </div>)";
+    start_deauth(wifi_number, DEAUTH_TYPE_SINGLE, reason);
+    } else {
+      html += R"( error>
+        <h2>Error: Invalid Network Number</h2>
+        <p>Please select a valid network number (0 to )" + String(num_networks - 1) + R"().</p>
+    </div>)";
+    }
+  }
+
+  html += R"(
+    <a href="/" class="button">Back to Home</a>
+</body>
+</html>
+  )";
+
+  server.send(200, "text/html", html);
+}
+        .alert {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .alert.error {
+            background-color: #f44336;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #008CBA;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #005f73;
+        }
+    </style>
+</head>
+<body>
     <div class="alert)";
 
   if (wifi_number < num_networks) {
@@ -236,6 +315,183 @@ void handle_deauth() {
   )";
 
   server.send(200, "text/html", html);
+}
+
+void handle_deauth_some() {
+  uint16_t reason = server.arg("reason").toInt();
+  const int maxTargets = 32;
+  int targets[maxTargets];
+  int targetCount = 0;
+
+  for (int i = 0; i < server.args(); i++) {
+    String name = server.argName(i);
+    if (name.startsWith("net_")) {
+      int idx = server.arg(i).toInt();
+      if (idx >= 0 && idx < num_networks && targetCount < maxTargets) {
+        targets[targetCount++] = idx;
+      }
+    }
+  }
+
+  String html = R"(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deauth Some Networks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .alert {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .alert.error {
+            background-color: #f44336;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #008CBA;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #005f73;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert")";
+
+  if (targetCount == 0) {
+    html += R"( error>
+        <h2>No networks selected</h2>
+        <p>Please select at least one network.</p>
+    </div>
+    <a href="/" class="button">Back to Home</a>
+</body>
+</html>
+)";
+    server.send(200, "text/html", html);
+    return;
+  } else {
+    html += R"(" >
+        <h2>Starting Deauth-Attack on Selected Networks!</h2>
+        <p>Number of networks: )" + String(targetCount) + R"(</p>
+        <p>Reason code: )" + String(reason) + R"(</p>
+        <p>They will be deauthed one by one.</p>
+    </div>
+    <a href="/" class="button">Back to Home</a>
+</body>
+</html>
+)";
+    server.send(200, "text/html", html);
+  }
+
+  for (int i = 0; i < targetCount; i++) {
+    {
+      std::lock_guard<std::mutex> lock(wifi_mutex);
+      start_deauth(targets[i], DEAUTH_TYPE_SINGLE, reason);
+    }
+    delay(5000);
+    stop_deauth();
+  }
+}
+    }
+  }
+
+  String html = R"(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deauth Some Networks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .alert {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .alert.error {
+            background-color: #f44336;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #008CBA;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #005f73;
+        }
+    </style>
+</head>
+<body>
+    <div class="alert)";
+
+  if (targetCount == 0) {
+    html += R"( error">
+        <h2>No networks selected</h2>
+        <p>Please select at least one network.</p>
+    </div>
+    <a href="/" class="button">Back to Home</a>
+</body>
+</html>
+)";
+    server.send(200, "text/html", html);
+    return;
+  } else {
+    html += R"(">
+        <h2>Starting Deauth-Attack on Selected Networks!</h2>
+        <p>Number of networks: )" + String(targetCount) + R"(</p>
+        <p>Reason code: )" + String(reason) + R"(</p>
+        <p>They will be deauthed one by one.</p>
+    </div>
+    <a href="/" class="button">Back to Home</a>
+</body>
+</html>
+)";
+    server.send(200, "text/html", html);
+  }
+
+  for (int i = 0; i < targetCount; i++) {
+    start_deauth(targets[i], DEAUTH_TYPE_SINGLE, reason);
+    delay(5000);
+    stop_deauth();
+  }
 }
 
 void handle_deauth_all() {
@@ -309,6 +565,7 @@ void handle_stop() {
 void start_web_interface() {
   server.on("/", handle_root);
   server.on("/deauth", handle_deauth);
+  server.on("/deauth_some", handle_deauth_some);
   server.on("/deauth_all", handle_deauth_all);
   server.on("/rescan", handle_rescan);
   server.on("/stop", handle_stop);
