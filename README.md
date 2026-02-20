@@ -8,7 +8,7 @@ This repository contains an ESP32-based deauth tool for **educational and testin
 
   <img width="1280" height="757" alt="image" src="https://github.com/user-attachments/assets/e7bfb0f2-5364-456a-94c7-93c8dbbdab42" />
 
-![Circuit Diagram](image/circuit%20(1).png)
+
 
 Read the [DISCLAIMER](DISCLAIMER.md) carefully before using this project.
 
@@ -25,6 +25,8 @@ Read the [DISCLAIMER](DISCLAIMER.md) carefully before using this project.
 - Basic battery level display on the OLED
 
 ## Hardware Overview
+
+![Circuit Diagram](image/circuit%20(1).png)
 
 See [MODULES.md](MODULES.md) for a short list of required modules.
 
@@ -117,4 +119,5 @@ See [DISCLAIMER.md](DISCLAIMER.md) for more detail.
 ## License
 
 This project is licensed under the GNU General Public License v3.0 or later. See [LICENSE](LICENSE) for details.
+
 
