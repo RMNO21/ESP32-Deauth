@@ -10,7 +10,8 @@
 #define DEAUTH_BLINK_TIMES 2
 #define DEAUTH_BLINK_DURATION 20
 #define DEAUTH_TYPE_SINGLE 0
-#define DEAUTH_TYPE_ALL 1
+#define DEAUTH_TYPE_MULTI 1
+#define DEAUTH_TYPE_ALL 2
 
 #ifdef SERIAL_DEBUG
 #define DEBUG_PRINT(...) Serial.print(__VA_ARGS__)

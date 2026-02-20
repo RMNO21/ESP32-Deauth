@@ -66,6 +66,8 @@ void setup() {
 #ifdef SERIAL_DEBUG
   Serial.begin(115200);
 #endif
+  Wire.begin();
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   WiFi.mode(WIFI_MODE_AP);
   WiFi.softAP(AP_SSID, AP_PASS);
   display.clearDisplay();
@@ -75,8 +77,11 @@ void setup() {
   pinMode(BTN_DOWN, INPUT_PULLUP);
   pinMode(BTN_OK, INPUT_PULLUP);
   pinMode(BTN_BACK, INPUT_PULLUP);
+#ifdef LED
+  pinMode(LED, OUTPUT);
+#endif
   display.setCursor(0, 0);
-  display.println("Raman Deauther");
+  display.println("ESP32-Deauther");
   display.setCursor(0, 20);
   display.println("Ready...");
   display.display();
@@ -110,7 +115,7 @@ void loop() {
         display.print("Deauth: ");
         display.println(WiFi.SSID(selected_network));
         display.setCursor(0, 10);
-        display.print("Raman Is god...");
+        display.print("Running...");
         display.display();
         start_deauth(selected_network, DEAUTH_TYPE_SINGLE, 1);
         delay(500);
@@ -158,11 +163,10 @@ void loop() {
     {
       std::lock_guard<std::mutex> lock(wifi_mutex);
       esp_err_t err = esp_wifi_set_channel(curr_channel, WIFI_SECOND_CHAN_NONE);
-      if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_channel error: %d
-", err);
+      if (err != ESP_OK) DEBUG_PRINTF("esp_wifi_set_channel error: %d\n", err);
     }
     curr_channel++;
-    delay(50); // Increased delay to prevent rapid channel switching
+    delay(50);
   } else {
     web_interface_handle_client();
   }
@@ -190,8 +194,6 @@ void executeOption(int index) {
       multi_select_mode = false;
       display.setCursor(0, 0);
       display.println("Scanning...");
-      display.setCursor(0, 20);
-      display.println("Raman is god");
       display.display();
       {
         std::lock_guard<std::mutex> lock(wifi_mutex);
@@ -210,31 +212,11 @@ void executeOption(int index) {
       clearSelections();
       display.setCursor(0, 0);
       display.println("Scanning...");
-      display.setCursor(0, 20);
-      display.println("Raman is god");
       display.display();
       {
         std::lock_guard<std::mutex> lock(wifi_mutex);
         scan_count = WiFi.scanNetworks(false, true);
       }
-      selected_network = 0;
-      if (scan_count > 0) {
-        in_network_list = true;
-        showNetworks();
-      } else {
-        multi_select_mode = false;
-        showMenu();
-      }
-      break;
-    case 1:
-      multi_select_mode = true;
-      clearSelections();
-      display.setCursor(0, 0);
-      display.println("Scanning...");
-      display.setCursor(0, 20);
-      display.println("Raman is god");
-      display.display();
-      scan_count = WiFi.scanNetworks(false, true);
       selected_network = 0;
       if (scan_count > 0) {
         in_network_list = true;
@@ -248,8 +230,6 @@ void executeOption(int index) {
       multi_select_mode = false;
       display.setCursor(0, 0);
       display.println("Deauth All...");
-      display.setCursor(0, 20);
-      display.println("Raman is god");
       display.display();
       start_deauth(0, DEAUTH_TYPE_ALL, 1);
       break;
@@ -334,7 +314,3 @@ int getbattery() {
   else if (vbat >= 3.2) return 10;
   else return 0;
 }
-
-// every illigal activiti is on your own, this is just for learning
-//report any bugs or suggestions to <tondroraman83@gmail.com>
-//this code is inspired by: https://github.com/tesa-klebeband/ESP32-Deauther
